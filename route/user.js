@@ -1,14 +1,12 @@
 const express = require("express");
 const {
-  getAllEmployer,
-  getAllEmployerById,
-
-  loginEmployer,
-
-  updateEmployer,
-
-  registrationthroughAdmin,
-} = require("../controller/employerCtrl");
+  Create_knovators,
+  login,
+  get_knovators,
+  get_By_Id_knovators,
+  put_knovators_By_Id,
+  deleteByid
+} = require("../controller/user");
 
 const router = express.Router();
 
@@ -27,16 +25,17 @@ const verifyToken = require("../middleware/auth");
 // });
 
 router.post(
-  "/registrationthroughAdmin",
-  verifyToken.verifyToken(allowedRoles4),
-  registrationthroughAdmin
+  "/Create_knovators",
+//   verifyToken.verifyToken(allowedRoles4),
+  Create_knovators
 );
-//////////////////////////////////////////////////////////////////////////////
+router.get("/get/knovators", get_knovators)
 
-router.post("/login", loginEmployer);
+router.post("/login_User", login);
 
-router.get("/getAll", getAllEmployer);
-router.get("/:id", getAllEmployerById);
-router.put("/update/Employer/:id", cpUpload, updateEmployer);
+
+router.get("/get_By_Id/knovators/:id", get_By_Id_knovators);
+router.put("/put/knovators/:id", put_knovators_By_Id);
+router.delete("/delete/knovators/:id", deleteByid);
 
 module.exports = router;
