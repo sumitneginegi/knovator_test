@@ -18,72 +18,31 @@ exports.Create_knovators = async (req, res) => {
 };
 
 
-exports.login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    if (!email) {
-      return res
-        .status(400)
-        .json({ error: "email number required" });
-    }
-    
-    const manpower = await User.findOne({ email: email});
-    if (manpower) {
-      const manpower1 = await User.findOne({ mobile: mobile,  password: password });
-      if (!manpower1) {
+exports.login_User = async (req, res) => {
 
-        return res.status(404).json({ error: "password is incorrect" });
+    const userEmail = req.body.email
+    console.log(userEmail);
+    const password = req.body.password
+    try {
+      const user = await Knovator.findOne({ email: userEmail });
+  console.log(user)
+      if (!user) {
+        return res.status(401).json({ error: "Invalid email" });
       }
+  
+      const passwordMatch = await bcrypt.compare(password, user.password);
+  
+      if (!passwordMatch) {
+        return res.status(401).json({ error: "Invalid password" });
+      }
+  
+      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+      res.setHeader("Authorization");
+      res.json({ token });
+    } catch (error) {
+      res.status(500).json({ error: "Internal Server Error" });
     }
-    else {
-      return res.status(404).json({ error: "user not found" });
-    }
-
-    const token = jwt.sign({ id: manpower._id }, process.env.JWT_SECRET);
-
-    res.status(200).json({
-      message: "Login successful",
-      data: {
-        token,
-        
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Something went wrong" });
   }
-}
-
-
-
-
-
-
-// exports.login_User = async (req, res) => {
-
-//     const userEmail = req.body.email
-//     console.log(userEmail);
-//     const password = req.body.password
-//     try {
-//       const user = await Knovator.findOne({ email: userEmail });
-//   console.log(user)
-//       if (!user) {
-//         return res.status(401).json({ error: "Invalid email" });
-//       }
-  
-//       const passwordMatch = await bcrypt.compare(password, user.password);
-  
-//       if (!passwordMatch) {
-//         return res.status(401).json({ error: "Invalid password" });
-//       }
-  
-//       const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-//       res.setHeader("Authorization");
-//       res.json({ token });
-//     } catch (error) {
-//       res.status(500).json({ error: "Internal Server Error" });
-//     }
-//   }
 
 exports.get_knovators = async (req, res) => {
   try {
@@ -126,58 +85,39 @@ exports.deleteByid = async (req, res) => {
 
 
 
-exports.findManpowerthroughRadius = async (req, res) => {
+exports.findUserthroughRadius = async (req, res) => {
   try {
-    const { employerId, orderId, radiusInKm, category, body } = req.body;
+    const { userid1,userid2, radiusInKm } = req.body;
 
-    // Find the employer by employerId
-    const employer = await User.findById(employerId);
-    // console.log(employer.employerName);
+    const emp1 = await Knovator.findById(userid1);
+    
 
-    if (!employer || employer.userType !== "employer") {
-      return res.status(400).json({ message: "Invalid employer ID" });
+    if (!emp1) {
+      return res.status(400).json({ message: "Invalid user ID 1" });
     }
 
-    // Find the post within the employer's obj array by orderId
-    const post = employer.obj.find((post) => post.orderId == orderId);
-    console.log(post);
-    if (!post) {
-      return res.status(400).json({ message: "orderId not found" });
+    const emp2 = await Knovator.findById(userid2);
+    console.log(emp2);
+
+    if (!emp2) {
+      return res.status(400).json({ message: "Invalid user ID 2" });
     }
+    const { lati: lat1, longi: lon1 } = emp1;
+    const { lati: lat2, longi: lon2 } = emp2;
 
-    // Extract post details
-    const { job_desc, siteLocation, explainYourWork, date } = post;
+    const distance = getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2);
 
-    // Extract the post's latitude and longitude
-    const { lati, longi } = post;
-
-    // Find manpower within the specified radius
-    const manpowerWithinRadius = await User.find({
-      "serviceLocation.lati": { $exists: true }, // Ensure serviceLocation exists
-      "serviceLocation.longi": { $exists: true }, // Ensure serviceLocation exists
-      userType: "manpower", // Add this condition to filter by userType
-    }).lean();
-
-    console.log(manpowerWithinRadius);
-    console.log("-------------------");
-
-    const filteredManpower = manpowerWithinRadius.filter((manpower) => {
-      const distance = getDistanceFromLatLonInKm(
-        lati,
-        longi,
-        manpower.serviceLocation.lati,
-        manpower.serviceLocation.longi
-      );
-      console.log(distance);
-      return distance <= radiusInKm; // Filter by radius
-    });
-
-    console.log(filteredManpower);
-
-    return res.json({
-      data: filteredManpower.length,
-      manpower: filteredManpower,
-    });
+    if (distance <= radiusInKm) {
+      return res.json({
+        message: "Users are within the specified radius.",
+        distance: distance,
+      });
+    } else {
+      return res.json({
+        message: "Users are outside the specified radius.",
+        distance: distance,
+      });
+    }
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Internal Server Error" });
@@ -204,3 +144,5 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 function deg2rad(deg) {
   return deg * (Math.PI / 180);
 }
+
+

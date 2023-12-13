@@ -1,11 +1,12 @@
 const express = require("express");
 const {
   Create_knovators,
-  login,
+  login_User,
   get_knovators,
   get_By_Id_knovators,
   put_knovators_By_Id,
-  deleteByid
+  deleteByid,
+  findUserthroughRadius
 } = require("../controller/user");
 
 const router = express.Router();
@@ -31,11 +32,12 @@ router.post(
 );
 router.get("/get/knovators", get_knovators)
 
-router.post("/login_User", login);
+router.post("/login_User", login_User);
 
 
 router.get("/get_By_Id/knovators/:id", get_By_Id_knovators);
 router.put("/put/knovators/:id", put_knovators_By_Id);
 router.delete("/delete/knovators/:id", deleteByid);
+router.post("/findUserthroughRadius",findUserthroughRadius)
 
 module.exports = router;
